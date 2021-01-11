@@ -1,0 +1,4 @@
+name = "BluseDB"
+uuid = "ad29d749-1a85-45fa-99eb-ec15dfcb1cc5"
+authors = ["David MacMahon <davidm@astro.berkeley.edu>"]
+version = "0.1.0"
