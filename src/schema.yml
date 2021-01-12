@@ -15,7 +15,16 @@
     `fenchan` int not null,
     `nants` int not null,
     `dwell` double not null,
-    primary key(id)
+    primary key(id),
+    unique index unique_observation (
+      `imjd`,
+      `smjd`,
+      `ra`,
+      `decl`,
+      `fecenter`,
+      `fenchan`,
+      `nants`
+    )
   )
 
 - >-
@@ -30,5 +39,10 @@
     `file` varchar(1024) not null,
     primary key(id),
     foreign key (observation_id)
-      references observations(id)
+      references observations(id),
+    unique index unique_rawfile (
+      `host`,
+      `dir`,
+      `file`
+    )
   )
