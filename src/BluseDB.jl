@@ -6,6 +6,25 @@ import Base: @kwdef
 
 @enum UserLevel admin user reader
 
+const STATEMENT_CACHE = Dict{Tuple{DBInterface.Connection, Symbol},
+                             DBInterface.Statement}()
+
+function prepare(conn::DBInterface.Connection,
+                 key::Symbol)::DBInterface.Statement
+  get!(STATEMENT_CACHE, (conn, key),
+       DBInterface.prepare(conn, getfield(@__MODULE__, key)))
+end
+
+function unprepare(conn::DBInterface.Connection)
+  goners = findall(cs->cs[1]==conn, keys(STATEMENT_CACHE))
+  for goner in goners
+    stmt = STATEMENT_CACHE[goner]
+    delete!(STATEMENT_CACHE, goner)
+    DBInterface.close(stmt)
+  end
+  nothing
+end
+
 function load_credentials()
   credfile = joinpath(ENV["HOME"], ".blusedb.yml")
   YAML.load_file(credfile, dicttype=Dict{Symbol,Any})
@@ -46,5 +65,8 @@ function create_schema()
   end
   nothing
 end
+
+include("observations.jl")
+include("rawfiles.jl")
 
 end # module
