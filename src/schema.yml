@@ -9,7 +9,7 @@
     `imjd` int not null,
     `smjd` int not null,
     `ra` double not null,
-    `dec` double not null,
+    `decl` double not null,
     `src_name` varchar(32) not null,
     `fecenter` double not null,
     `fenchan` int not null,
