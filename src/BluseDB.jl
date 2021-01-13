@@ -27,8 +27,12 @@ function unprepare(conn::DBInterface.Connection)
 end
 
 function load_credentials()
+  @assert haskey(ENV, "BLUSEDB_ENV") "BLUSEDB_ENV not found in ENV"
+  blusedb_env = Symbol(ENV["BLUSEDB_ENV"])
   credfile = joinpath(ENV["HOME"], ".blusedb.yml")
-  YAML.load_file(credfile, dicttype=Dict{Symbol,Any})
+  envs = YAML.load_file(credfile, dicttype=Dict{Symbol,Any})
+  @assert haskey(envs, blusedb_env) """environment "$blusedb_env" not found in $credfile"""
+  envs[blusedb_env]
 end
 
 function load_credentials(userlevel::UserLevel)
