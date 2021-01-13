@@ -46,6 +46,8 @@ end
 load_schema() = YAML.load_file(joinpath(@__DIR__, "schema.yml"))
 
 function connect(userlevel::UserLevel; kwargs...)::DBInterface.Connection
+  @assert !haskey(kwargs, :db) "cannot specify db in kwargs"
+
   creds = load_credentials(userlevel)
 
   host = get(creds, :host, "localhost")
