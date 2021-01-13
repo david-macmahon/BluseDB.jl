@@ -69,32 +69,35 @@ insert into rawfiles (
 
 function insert_values(rawfile::RawFile)
   (
-    rawfile.id, rawfile.observation.id,
+    rawfile.id, rawfile.observation_id,
     rawfile.obsfreq, rawfile.obsbw, rawfile.nchan,
     rawfile.host, rawfile.dir, rawfile.file
   )
 end
 
-function insert!(conn::DBInterface.Connection, rf::RawFile)
+function insert!(conn::DBInterface.Connection, rf::RawFile)::RawFile
   # Cannot insert record if id is already non-zero
   @assert rf.id == 0
 
-  # Insert observation if needed
-  if rf.observation.id == 0
-    insert!(conn, rf.observation)
-  end
+  # Cannot insert record if observation_id is zero
+  @assert rf.observation_id != 0
 
-  # Get prepared statement from lazily initialized cache
-  stmt = prepare(conn, :RawFileInsertSQL)
-  try
-    cursor = DBInterface.execute(stmt, insert_values(rf))
-    # Store the assigned id
-    rf.id = DBInterface.lastrowid(cursor)
-  catch
-    # Assume that exception is unique constraint violation because someone has
-    # already inserted the record.
-    # TODO Verify that exception is unique constraint violation
-    select_by_unique!(conn, rf)
+  # First try to select rawfile based on unique index
+  if !select_by_unique!(conn, rf)
+    # Get prepared insert statement from lazily initialized cache
+    stmt = prepare(conn, :RawFileInsertSQL)
+    try
+      cursor = DBInterface.execute(stmt, insert_values(rf))
+      # Store the assigned id
+      rf.id = DBInterface.lastrowid(cursor)
+    catch
+      # Assume that exception is unique constraint violation because someone has
+      # already inserted the record.
+      # TODO Verify that exception is unique constraint violation
+      if !select_by_unique!(conn, rf)
+        rethrow()
+      end
+    end
   end
   rf
 end
