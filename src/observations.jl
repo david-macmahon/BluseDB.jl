@@ -34,14 +34,14 @@ function observation_by_id(conn, id::Integer)::Observation
   Observation(id, first(cursor)...)
 end
 
-const ObservationSelectIdSQL = """
-select id from observations where
+const ObservationSelectByUniqueSQL = """
+select id, start, src_name, dwell from observations where
   `imjd`=? and `smjd`=? and
   `ra`=? and `decl`=? and
   `fecenter`=? and `fenchan`=? and `nants`=?
 """
 
-function select_id_values(obs::Observation)
+function unique_values(obs::Observation)
   (
     obs.imjd, obs.smjd,
     obs.ra, obs.decl,
@@ -49,11 +49,19 @@ function select_id_values(obs::Observation)
   )
 end
 
-function select_id!(conn, obs)
+function select_by_unique!(conn::DBInterface.Connection, obs::Observation)::Bool
   # Get prepared statement from lazily initialized cache
-  stmt = prepare(conn, :ObservationSelectIdSQL)
-  cursor = DBInterface.execute(stmt, select_id_values(obs))
-  obs.id = first(cursor).id
+  stmt = prepare(conn, :ObservationSelectByUniqueSQL)
+  cursor = DBInterface.execute(stmt, unique_values(obs))
+  length(cursor) == 0 && return false
+  row = first(cursor)
+  foreach(pairs(row)) do (k,v)
+    if k != :id && getfield(obs, k) != v
+      @debug """overwriting local "$k" value "$(getfield(obs,k))" with database value "$(v)\""""
+    end
+    setfield!(obs, k, v)
+  end
+  true
 end
 
 const ObservationInsertSQL = """
