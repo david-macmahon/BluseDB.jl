@@ -60,15 +60,22 @@ function connect(userlevel::UserLevel; kwargs...)::DBInterface.Connection
                              host, username, password; db=database, kwargs...)
 end
 
-function create_schema()
-  conn = connect(admin)
+function connect(f::Function, userlevel::UserLevel; kwargs...)::Nothing
+  conn = connect(userlevel; kwargs...)
   try
-    schema = load_schema()
+    f(conn)
+  finally
+    DBInterface.close(conn)
+  end
+  nothing
+end
+
+function create_schema()
+  schema = load_schema()
+  connect(admin) do conn
     for sql in schema
       DBInterface.execute(conn, sql)
     end
-  finally
-    DBInterface.close!(conn)
   end
   nothing
 end
