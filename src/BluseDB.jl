@@ -11,8 +11,9 @@ const STATEMENT_CACHE = Dict{Tuple{DBInterface.Connection, Symbol},
 
 function prepare(conn::DBInterface.Connection,
                  key::Symbol)::DBInterface.Statement
-  get!(STATEMENT_CACHE, (conn, key),
-       DBInterface.prepare(conn, getfield(@__MODULE__, key)))
+  haskey(STATEMENT_CACHE, (conn, key)) ?
+    STATEMENT_CACHE[(conn, key)] :
+    DBInterface.prepare(conn, getfield(@__MODULE__, key))
 end
 
 function unprepare(conn::DBInterface.Connection)
