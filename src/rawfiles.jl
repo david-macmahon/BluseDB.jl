@@ -1,11 +1,11 @@
 # Struct and funcs for "rawfiles" table
 
 @kwdef mutable struct RawFile
-  id::Int = 0
-  observation_id::Int
+  id::Int32 = 0
+  observation_id::Int32
   obsfreq::Float64
   obsbw::Float64
-  nchan::Int
+  nchan::Int32
   host::String
   dir::String
   file::String
@@ -23,7 +23,7 @@ where id=?
 function rawfile_by_id(conn, id::Integer)::RawFile
   # Get prepared statement from lazily initialized cache
   stmt = prepare(conn, :RawFileSelectByIdSQL)
-  cursor = DBInterface.execute(stmt, Int64(id))
+  cursor = DBInterface.execute(stmt, Int32(id))
   length(cursor) == 0 && error("no rawfile with id=$id")
   RawFile(id, first(cursor)...)
 end

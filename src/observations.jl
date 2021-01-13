@@ -3,16 +3,16 @@
 using Dates
 
 @kwdef mutable struct Observation
-  id::Int = 0
+  id::Int32 = 0
   start::DateTime
-  imjd::Int
-  smjd::Int
+  imjd::Int32
+  smjd::Int32
   ra::Float64
   decl::Float64
   src_name::String
   fecenter::Float64
-  fenchan::Int
-  nants::Int
+  fenchan::Int32
+  nants::Int32
   dwell::Float64
 end
 
@@ -29,7 +29,7 @@ where id=?
 function observation_by_id(conn, id::Integer)::Observation
   # Get prepared statement from lazily initialized cache
   stmt = prepare(conn, :ObservationSelectByIdSQL)
-  cursor = DBInterface.execute(stmt, Int64(id))
+  cursor = DBInterface.execute(stmt, Int32(id))
   length(cursor) == 0 && error("no observation with id=$id")
   Observation(id, first(cursor)...)
 end
