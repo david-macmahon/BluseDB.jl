@@ -94,17 +94,22 @@ function insert!(conn, obs::Observation)
   # Cannot insert record if id is already non-zero
   @assert obs.id == 0
 
-  # Get prepared statement from lazily initialized cache
-  stmt = prepare(conn, :ObservationInsertSQL)
-  try
-    cursor = DBInterface.execute(stmt, insert_values(obs))
-    # Store the assigned id
-    obs.id = DBInterface.lastrowid(cursor)
-  catch
-    # Assume that exception is unique constraint violation because someone has
-    # already inserted the record.
-    # TODO Verify that exception is unique constraint violation
-    select_id!(conn, obs)
+  # First try to select observation based on unique index
+  if !select_by_unique!(conn, obs)
+    # Get prepared insert statement from lazily initialized cache
+    stmt = prepare(conn, :ObservationInsertSQL)
+    try
+      cursor = DBInterface.execute(stmt, insert_values(obs))
+      # Store the assigned id
+      obs.id = DBInterface.lastrowid(cursor)
+    catch
+      # Assume that exception is unique constraint violation because someone has
+      # already inserted the record.
+      # TODO Verify that exception is unique constraint violation
+      if !select_by_unique!(conn, obs)
+        rethrow()
+      end
+    end
   end
   obs
 end
