@@ -20,7 +20,7 @@ from rawfiles
 where id=?
 """
 
-function rawfile_by_id(conn, id::Integer)::RawFile
+function rawfile_by_id(conn::DBInterface.Connection, id::Integer)::RawFile
   # Get prepared statement from lazily initialized cache
   stmt = prepare(conn, :RawFileSelectByIdSQL)
   cursor = DBInterface.execute(stmt, Int32(id))
@@ -39,7 +39,7 @@ function select_id_values(rf::RawFile)
   )
 end
 
-function select_id!(conn, rf::RawFile)
+function select_id!(conn::DBInterface.Connection, rf::RawFile)
   # Get prepared statement from lazily initialized cache
   stmt = prepare(conn, :RawFileSelectIdSQL)
   cursor = DBInterface.execute(stmt, select_id_values(rf))
@@ -66,7 +66,7 @@ function insert_values(rawfile::RawFile)
   )
 end
 
-function insert!(conn, rf::RawFile)
+function insert!(conn::DBInterface.Connection, rf::RawFile)
   # Cannot insert record if id is already non-zero
   @assert rf.id == 0
 

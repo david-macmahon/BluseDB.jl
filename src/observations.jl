@@ -26,7 +26,7 @@ from observations
 where id=?
 """
 
-function observation_by_id(conn, id::Integer)::Observation
+function observation_by_id(conn::DBInterface.Connection, id::Integer)::Observation
   # Get prepared statement from lazily initialized cache
   stmt = prepare(conn, :ObservationSelectByIdSQL)
   cursor = DBInterface.execute(stmt, Int32(id))
@@ -90,7 +90,7 @@ function insert_values(obs::Observation)
   )
 end
 
-function insert!(conn, obs::Observation)
+function insert!(conn::DBInterface.Connection, obs::Observation)::Observation
   # Cannot insert record if id is already non-zero
   @assert obs.id == 0
 
