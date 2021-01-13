@@ -28,22 +28,31 @@ function rawfile_by_id(conn::DBInterface.Connection, id::Integer)::RawFile
   RawFile(id, first(cursor)...)
 end
 
-const RawFileSelectIdSQL = """
-select id from rawfiles where
-  `host`=? and `dir`=? and `file`=?
+const RawFileSelectByUniqueSQL = """
+select id, observation_id, obsfreq, obsbw, nchan
+from rawfiles
+where `host`=? and `dir`=? and `file`=?
 """
 
-function select_id_values(rf::RawFile)
+function unique_values(rf::RawFile)
   (
     rf.host, rf.dir, rf.file
   )
 end
 
-function select_id!(conn::DBInterface.Connection, rf::RawFile)
+function select_by_unique!(conn::DBInterface.Connection, rf::RawFile)::Bool
   # Get prepared statement from lazily initialized cache
-  stmt = prepare(conn, :RawFileSelectIdSQL)
-  cursor = DBInterface.execute(stmt, select_id_values(rf))
-  rf.id = first(cursor).id
+  stmt = prepare(conn, :RawFileSelectByUniqueSQL)
+  cursor = DBInterface.execute(stmt, unique_values(rf))
+  length(cursor) == 0 && return false
+  row = first(cursor)
+  foreach(pairs(row)) do (k,v)
+    if k != :id && getfield(rf, k) != v
+      @debug """overwriting local "$k" value "$(getfield(rf,k))" with database value "$(v)\""""
+    end
+    setfield!(rf, k, v)
+  end
+  true
 end
 
 const RawFileInsertSQL = """
@@ -85,7 +94,7 @@ function insert!(conn::DBInterface.Connection, rf::RawFile)
     # Assume that exception is unique constraint violation because someone has
     # already inserted the record.
     # TODO Verify that exception is unique constraint violation
-    select_id!(conn, rf)
+    select_by_unique!(conn, rf)
   end
   rf
 end
