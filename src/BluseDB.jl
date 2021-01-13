@@ -55,7 +55,7 @@ function connect(userlevel::UserLevel; kwargs...)::DBInterface.Connection
   password = get(creds, :password, "")
   database = get(creds, :database, "blusedb")
 
-  @info "connecting as $username/$password@$host using database $database"
+  @debug "connecting as $username@$host using database $database"
   conn = DBInterface.connect(MySQL.Connection,
                              host, username, password; db=database, kwargs...)
 end
