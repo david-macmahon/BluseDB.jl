@@ -36,6 +36,7 @@
     `host` varchar(12) not null,
     `dir` varchar(512) not null,
     `file` varchar(512) not null,
+    `lastseen` datetime not null,
     primary key(id),
     foreign key (observation_id)
       references observations(id),

@@ -9,13 +9,14 @@
   host::String
   dir::String
   file::String
+  lastseen::DateTime
 end
 
 const RawFileSelectByIdSQL = """
 select
   `observation_id`,
   `obsfreq`, `obsbw`, `nchan`,
-  `host`, `dir`, `file`
+  `host`, `dir`, `file`, `lastseen`
 from rawfiles
 where id=?
 """
@@ -29,7 +30,7 @@ function rawfile_by_id(conn::DBInterface.Connection, id::Integer)::RawFile
 end
 
 const RawFileSelectByUniqueSQL = """
-select id, observation_id, obsfreq, obsbw, nchan
+select id, observation_id, obsfreq, obsbw, nchan, lastseen
 from rawfiles
 where `host`=? and `dir`=? and `file`=?
 """
@@ -59,11 +60,11 @@ const RawFileInsertSQL = """
 insert into rawfiles (
   `id`, `observation_id`,
   `obsfreq`, `obsbw`, `nchan`,
-  `host`, `dir`, `file`
+  `host`, `dir`, `file`, `lastseen`
 ) values (
   ?, ?,
   ?, ?, ?,
-  ?, ?, ?
+  ?, ?, ?, ?
 )
 """
 
@@ -71,7 +72,7 @@ function insert_values(rawfile::RawFile)
   (
     rawfile.id, rawfile.observation_id,
     rawfile.obsfreq, rawfile.obsbw, rawfile.nchan,
-    rawfile.host, rawfile.dir, rawfile.file
+    rawfile.host, rawfile.dir, rawfile.file, rawfile.lastseen
   )
 end
 
