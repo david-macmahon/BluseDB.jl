@@ -13,15 +13,13 @@ using Dates
   fecenter::Float64
   fenchan::Int32
   nants::Int32
-  dwell::Float64
 end
 
 const ObservationSelectByIdSQL = """
 select
   `start`, `imjd`, `smjd`,
   `ra`, `decl`, `src_name`,
-  `fecenter`, `fenchan`, `nants`,
-  `dwell`
+  `fecenter`, `fenchan`, `nants`
 from observations
 where id=?
 """
@@ -35,7 +33,7 @@ function observation_by_id(conn::DBInterface.Connection, id::Integer)::Observati
 end
 
 const ObservationSelectByUniqueSQL = """
-select id, start, src_name, dwell from observations where
+select id, start, src_name from observations where
   `imjd`=? and `smjd`=? and
   `ra`=? and `decl`=? and
   `fecenter`=? and `fenchan`=? and `nants`=?
@@ -69,14 +67,12 @@ insert into observations (
   `id`,
   `start`, `imjd`, `smjd`,
   `ra`, `decl`, `src_name`,
-  `fecenter`, `fenchan`, `nants`,
-  `dwell`
+  `fecenter`, `fenchan`, `nants`
 ) values (
   ?,
   ?, ?, ?,
   ?, ?, ?,
-  ?, ?, ?,
-  ?
+  ?, ?, ?
 )
 """
 
@@ -85,8 +81,7 @@ function insert_values(obs::Observation)
     obs.id,
     obs.start, obs.imjd, obs.smjd,
     obs.ra, obs.decl, obs.src_name,
-    obs.fecenter, obs.fenchan, obs.nants,
-    obs.dwell
+    obs.fecenter, obs.fenchan, obs.nants
   )
 end
 

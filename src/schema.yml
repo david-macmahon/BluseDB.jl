@@ -14,7 +14,6 @@
     `fecenter` double not null,
     `fenchan` int not null,
     `nants` int not null,
-    `dwell` double not null,
     primary key(id),
     unique index unique_observation (
       `imjd`,
