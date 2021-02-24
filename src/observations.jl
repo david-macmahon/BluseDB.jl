@@ -32,19 +32,33 @@ function observation_by_id(conn::DBInterface.Connection, id::Integer)::Observati
   Observation(id, first(cursor)...)
 end
 
-const ObservationSelectByUniqueSQL = """
-select id, start, src_name from observations where
+const ObservationIdByUniqueSQL = """
+select id from observations where
   `imjd`=? and `smjd`=? and
-  `ra`=? and `decl`=? and
+  `ra`=? and `decl`=? and `src_name`=? and
+  `fecenter`=? and `fenchan`=? and `nants`=?
+"""
+
+const ObservationSelectByUniqueSQL = """
+select id, start from observations where
+  `imjd`=? and `smjd`=? and
+  `ra`=? and `decl`=? and `src_name`=? and
   `fecenter`=? and `fenchan`=? and `nants`=?
 """
 
 function unique_values(obs::Observation)
   (
     obs.imjd, obs.smjd,
-    obs.ra, obs.decl,
+    obs.ra, obs.decl, obs.src_name,
     obs.fecenter, obs.fenchan, obs.nants
   )
+end
+
+function id_by_unique(conn::DBInterface.Connection, obs::Observation)::Int32
+  # Get prepared statement from lazily initialized cache
+  stmt = prepare(conn, :ObservationIdByUniqueSQL)
+  cursor = DBInterface.execute(stmt, unique_values(obs))
+  length(cursor) == 0 ? 0 : first(cursor)[:id]
 end
 
 function select_by_unique!(conn::DBInterface.Connection, obs::Observation)::Bool
@@ -60,6 +74,23 @@ function select_by_unique!(conn::DBInterface.Connection, obs::Observation)::Bool
     setfield!(obs, k, v)
   end
   true
+end
+
+const ObservationUpdateByIdSQL = """
+update observations
+set start=?, imjd=?, smjd=?,
+    ra=?, decl=?, src_name=?,
+    fecenter=?, fenchan=?, nants=?
+where id=?
+"""
+
+function update_by_id_values(obs::Observation)
+  (
+    obs.start, obs.imjd, obs.smjd,
+    obs.ra, obs.decl, obs.src_name,
+    obs.fecenter, obs.fenchan, obs.nants,
+    obs.id
+  )
 end
 
 const ObservationInsertSQL = """
@@ -85,26 +116,44 @@ function insert_values(obs::Observation)
   )
 end
 
-function insert!(conn::DBInterface.Connection, obs::Observation)::Observation
-  # Cannot insert record if id is already non-zero
-  @assert obs.id == 0
-
-  # First try to select observation based on unique index
-  if !select_by_unique!(conn, obs)
+"""
+Store `obs` in the database.  If the database has a record for `obs` (based on
+the unique constraint), update it with the values from  `obs`.  Otherwise,
+insert a new record for `obs`.  If the insert fails because someone else beats
+us to it, then update the record added by them with values from `obs`.  Upon
+return, the `id` field of `obs` will reflect the value in the database.
+"""
+function store!(conn::DBInterface.Connection, obs::Observation)::Observation
+  # If observation does not yet exist
+  obs.id = id_by_unique(conn, obs)
+  if obs.id == 0
     # Get prepared insert statement from lazily initialized cache
     stmt = prepare(conn, :ObservationInsertSQL)
     try
       cursor = DBInterface.execute(stmt, insert_values(obs))
       # Store the assigned id
       obs.id = DBInterface.lastrowid(cursor)
+      # Done
+      return obs
     catch
       # Assume that exception is unique constraint violation because someone has
       # already inserted the record.
       # TODO Verify that exception is unique constraint violation
-      if !select_by_unique!(conn, obs)
+
+      # Get id from database so we can update record by id
+      obs.id = id_by_unique(conn, obs)
+      if obs.id == 0
         rethrow()
       end
     end
   end
+
+  # If we get here, the record needs to be updated
+  @assert obs.id != 0
+
+  # Get prepared insert statement from lazily initialized cache
+  stmt = prepare(conn, :ObservationUpdateByIdSQL)
+  DBInterface.execute(stmt, update_by_id_values(obs))
+
   obs
 end

@@ -20,6 +20,7 @@
       `smjd`,
       `ra`,
       `decl`,
+      `src_name`,
       `fecenter`,
       `fenchan`,
       `nants`
